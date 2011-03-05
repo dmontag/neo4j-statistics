@@ -5,6 +5,7 @@ import org.junit.Test;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.statistics.processors.RelationshipTypeCounts;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -80,7 +81,8 @@ public class RelationshipTypeCountsTests extends Neo4jTestCase
 
     private RelationshipTypeCounts getCounts()
     {
-        RelationshipTypeCounts counts = new RelationshipTypeCounts().run( graphDb(), System.out );
+        RelationshipTypeCounts counts = new RelationshipTypeCounts( graphDb(), System.out );
+        counts.run();
         p( counts );
         return counts;
     }

@@ -36,6 +36,11 @@ public class Main
 
     public static void main( String[] args ) throws Exception
     {
+        if ( args.length < 1 )
+        {
+            println( "Missing arg: <store path>" );
+            System.exit( 1 );
+        }
         Main main = new Main( args[0] );
         main.run();
         main.shutdown();
@@ -194,12 +199,12 @@ public class Main
         println( "  last           Show results of last run" );
     }
 
-    private void println()
+    private static void println()
     {
         System.out.println();
     }
 
-    private void println( String message, Object... args )
+    private static void println( String message, Object... args )
     {
         System.out.println( String.format( message, args ) );
     }

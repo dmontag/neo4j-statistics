@@ -135,7 +135,14 @@ public class Main
         {
             public void run()
             {
-                processor.process();
+                try
+                {
+                    processor.process();
+                }
+                catch ( Throwable e )
+                {
+                    e.printStackTrace();
+                }
             }
         } );
 

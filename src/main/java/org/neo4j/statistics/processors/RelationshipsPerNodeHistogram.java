@@ -4,6 +4,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.statistics.Chunk;
+import org.neo4j.statistics.Histogram;
 import org.neo4j.statistics.KeyedCounter;
 import org.neo4j.statistics.StatisticsProcessor;
 
@@ -24,6 +25,8 @@ public class RelationshipsPerNodeHistogram implements StatisticsProcessor
     private PrintStream out;
     private GraphDatabaseService graphDb;
     private volatile boolean shouldAbort;
+
+    private Histogram histogram;
 
     public RelationshipsPerNodeHistogram( GraphDatabaseService graphDb, PrintStream out, long chunkSize )
     {
@@ -131,7 +134,6 @@ public class RelationshipsPerNodeHistogram implements StatisticsProcessor
 
     public void process()
     {
-
         run();
     }
 

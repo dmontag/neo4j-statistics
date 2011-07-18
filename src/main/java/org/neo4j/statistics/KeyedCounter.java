@@ -1,8 +1,5 @@
 package org.neo4j.statistics;
 
-import com.sun.xml.internal.bind.v2.util.QNameMap;
-
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -22,9 +19,29 @@ public class KeyedCounter<KEY>
 
     public void incForKey( KEY key )
     {
+        getCounter( key ).inc();
+    }
+
+    public void incForKey( KEY key, int increment )
+    {
+        getCounter( key ).add( increment );
+    }
+
+    public void setForKey( KEY key, int value )
+    {
+        getCounter( key ).set( value );
+    }
+
+    public int getForKey( KEY key )
+    {
+        return getCounter( key ).getCount();
+    }
+
+    private Counter getCounter( KEY key )
+    {
         Counter counter = counters.get( key );
         if ( counter == null ) counters.put( key, counter = new Counter() );
-        counter.inc();
+        return counter;
     }
 
     @Override

@@ -1,2 +1,3 @@
 org.neo4j.statistics.processors.RelationshipsPerNodeHistogramFactory
 org.neo4j.statistics.processors.RelationshipTypeCountsFactory
+org.neo4j.statistics.processors.PropertyTypeStatsFactory

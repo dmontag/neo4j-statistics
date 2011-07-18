@@ -48,6 +48,12 @@ public class Counter
         return count;
     }
 
+    @Override
+    public String toString()
+    {
+        return "" + count;
+    }
+
     public void set( int value )
     {
         this.count = value;

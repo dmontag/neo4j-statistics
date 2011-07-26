@@ -3,9 +3,9 @@ package org.neo4j.statistics;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Chunk
+public class Chunk<SAMPLE_TYPE>
 {
-    private List<Long> samples = new ArrayList<Long>();
+    private List<SAMPLE_TYPE> samples = new ArrayList<SAMPLE_TYPE>();
     private long count;
 
     public Chunk()
@@ -18,13 +18,13 @@ public class Chunk
         this.count = initialCount;
     }
 
-    public Chunk( long initialCount, List<Long> samples )
+    public Chunk( long initialCount, List<SAMPLE_TYPE> samples )
     {
         this.count = initialCount;
         this.samples = samples;
     }
 
-    public void record( long sample )
+    public void record( SAMPLE_TYPE sample )
     {
         count++;
         if ( samples.size() < 3 )
@@ -33,7 +33,7 @@ public class Chunk
         }
     }
 
-    public List<Long> getSamples()
+    public List<SAMPLE_TYPE> getSamples()
     {
         return samples;
     }

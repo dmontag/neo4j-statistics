@@ -43,7 +43,7 @@ public class RelationshipsPerNodeHistogramTest extends Neo4jTestCase
     @Test
     public void testJustReferenceNode()
     {
-        Map<Long, Chunk> result = getNodeHisto( 10 ).getCounts();
+        Map<Long, Chunk<Long>> result = getNodeHisto( 10 ).getCounts();
         assertEquals( "Wrong result.", Collections.singletonMap( 0L, new Chunk( 1 ) ), result );
     }
 
@@ -51,7 +51,7 @@ public class RelationshipsPerNodeHistogramTest extends Neo4jTestCase
     public void testTwoNodesWithRel()
     {
         graphDb().getReferenceNode().createRelationshipTo( graphDb().createNode(), REL_TYPE );
-        Map<Long, Chunk> result = getNodeHisto( 10 ).getCounts();
+        Map<Long, Chunk<Long>> result = getNodeHisto( 10 ).getCounts();
         assertEquals( "Wrong result.", Collections.singletonMap( 1L, new Chunk( 2 ) ), result );
     }
 
@@ -59,7 +59,7 @@ public class RelationshipsPerNodeHistogramTest extends Neo4jTestCase
     public void testTwoNodesWithRelAndLonelyNode()
     {
         graphDb().createNode().createRelationshipTo( graphDb().createNode(), REL_TYPE );
-        Map<Long, Chunk> result = getNodeHisto( 10 ).getCounts();
+        Map<Long, Chunk<Long>> result = getNodeHisto( 10 ).getCounts();
         expected.put( 0L, new Chunk( 1 ) );
         expected.put( 1L, new Chunk( 2 ) );
         assertEquals( "Wrong result.", expected, result );
@@ -71,7 +71,7 @@ public class RelationshipsPerNodeHistogramTest extends Neo4jTestCase
         Node node = graphDb().createNode();
         node.createRelationshipTo( graphDb().createNode(), REL_TYPE );
         node.createRelationshipTo( graphDb().createNode(), REL_TYPE );
-        Map<Long, Chunk> result = getNodeHisto( 1 ).getCounts();
+        Map<Long, Chunk<Long>> result = getNodeHisto( 1 ).getCounts();
         expected.put( 0L, new Chunk( 1 ) );
         expected.put( 1L, new Chunk( 2 ) );
         expected.put( 2L, new Chunk( 1 ) );
@@ -85,7 +85,7 @@ public class RelationshipsPerNodeHistogramTest extends Neo4jTestCase
         node.createRelationshipTo( graphDb().createNode(), REL_TYPE );
         node.createRelationshipTo( graphDb().createNode(), REL_TYPE );
         node.createRelationshipTo( graphDb().createNode(), REL_TYPE );
-        Map<Long, Chunk> result = getNodeHisto( 1 ).getCounts();
+        Map<Long, Chunk<Long>> result = getNodeHisto( 1 ).getCounts();
         expected.put( 0L, new Chunk( 1 ) );
         expected.put( 1L, new Chunk( 3 ) );
         expected.put( 3L, new Chunk( 1 ) );
@@ -98,7 +98,7 @@ public class RelationshipsPerNodeHistogramTest extends Neo4jTestCase
         Node node = graphDb().createNode();
         node.createRelationshipTo( graphDb().createNode(), REL_TYPE );
         node.createRelationshipTo( graphDb().createNode(), REL_TYPE );
-        Map<Long, Chunk> result = getNodeHisto( 2 ).getCounts();
+        Map<Long, Chunk<Long>> result = getNodeHisto( 2 ).getCounts();
         expected.put( 0L, new Chunk( 1 ) );
         expected.put( 1L, new Chunk( 3 ) );
         assertEquals( "Wrong result.", expected, result );
@@ -111,7 +111,7 @@ public class RelationshipsPerNodeHistogramTest extends Neo4jTestCase
         node.createRelationshipTo( graphDb().createNode(), REL_TYPE );
         node.createRelationshipTo( graphDb().createNode(), REL_TYPE );
         node.createRelationshipTo( graphDb().createNode(), REL_TYPE );
-        Map<Long, Chunk> result = getNodeHisto( 2 ).getCounts();
+        Map<Long, Chunk<Long>> result = getNodeHisto( 2 ).getCounts();
         expected.put( 0L, new Chunk( 1 ) );
         expected.put( 1L, new Chunk( 3 ) );
         expected.put( 2L, new Chunk( 1 ) );
@@ -128,7 +128,7 @@ public class RelationshipsPerNodeHistogramTest extends Neo4jTestCase
         node1.createRelationshipTo( node3, REL_TYPE );
         node1.createRelationshipTo( graphDb().createNode(), REL_TYPE );
         node1.createRelationshipTo( graphDb().createNode(), REL_TYPE );
-        Map<Long, Chunk> result = getNodeHisto( 10 ).getCounts();
+        Map<Long, Chunk<Long>> result = getNodeHisto( 10 ).getCounts();
         assertEquals( "Wrong samples.",
             Arrays.asList( node1.getId(), node2.getId(), node3.getId() ),
             result.get( 1L ).getSamples() );
@@ -137,17 +137,17 @@ public class RelationshipsPerNodeHistogramTest extends Neo4jTestCase
     @Test
     public void testWriteRows() {
         StringBuilder stringBuilder = new StringBuilder();
-        SortedMap<Long,Chunk> results = new TreeMap<Long, Chunk>( new RelationshipsPerNodeHistogram.ReverseLongComparator() );
-        results.put( 2L, new Chunk( 2 ) ); // 6-10
-        results.put( 1L, new Chunk( 3 ) ); // 1-5
+        SortedMap<Long,Chunk<Long>> results = new TreeMap<Long, Chunk<Long>>( new Histogram.ReverseLongComparator() );
+        results.put( 2L, new Chunk<Long>( 2 ) ); // 6-10
+        results.put( 1L, new Chunk<Long>( 3 ) ); // 1-5
         new RelationshipsPerNodeHistogram( graphDb(), System.out, 5 ).writeRows( stringBuilder, results );
 
         String[] lines = stringBuilder.toString().split( "\n" );
         assertEquals( "Wrong row logged.",
-            Arrays.asList( "1", "2", "6-10", "[]", "2" ),
+            Arrays.asList( "1", "2", "6-10", "[]", "2", "20" ),
             Arrays.asList( splitRow( lines[0] ) ) );
         assertEquals( "Wrong row logged.",
-            Arrays.asList( "2", "3", "1-5", "[]", "5" ),
+            Arrays.asList( "2", "3", "1-5", "[]", "5", "15" ),
             Arrays.asList( splitRow( lines[1] ) ) );
     }
 
@@ -155,11 +155,11 @@ public class RelationshipsPerNodeHistogramTest extends Neo4jTestCase
     public void testWriteRow()
     {
         StringBuilder stringBuilder = new StringBuilder();
-        Chunk chunk = new Chunk( 2L );
+        Chunk<Long> chunk = new Chunk<Long>( 2L );
         chunk.record( 123L );
         new RelationshipsPerNodeHistogram( graphDb(), System.out, 5 ).writeRow( stringBuilder, 5, 2, chunk, 3 );
         assertEquals( "Wrong row logged.",
-            Arrays.asList( "5", "3", "6-10", "[123]", "3" ),
+            Arrays.asList( "5", "3", "6-10", "[123]", "3", "30" ),
             Arrays.asList( splitRow( stringBuilder.toString() ) ) );
     }
 
@@ -167,12 +167,12 @@ public class RelationshipsPerNodeHistogramTest extends Neo4jTestCase
     public void testWriteRowZeroRels()
     {
         StringBuilder stringBuilder = new StringBuilder();
-        Chunk chunk = new Chunk( 2L );
+        Chunk<Long> chunk = new Chunk<Long>( 2L );
         chunk.record( 123L );
         chunk.record( 456L );
         new RelationshipsPerNodeHistogram( graphDb(), System.out, 5 ).writeRow( stringBuilder, 5, 0, chunk, 3 );
         assertEquals( "Wrong row logged.",
-            Arrays.asList( "5", "4", "0", "[123,456]", "3" ),
+            Arrays.asList( "5", "4", "0", "[123,456]", "3", "0" ),
             Arrays.asList( splitRow( stringBuilder.toString() ) ) );
     }
 
@@ -199,7 +199,7 @@ public class RelationshipsPerNodeHistogramTest extends Neo4jTestCase
     {
         RelationshipsPerNodeHistogram histogram = new RelationshipsPerNodeHistogram( graphDb(), System.out, chunkSize );
         histogram.run();
-        Map<Long, Chunk> counts = histogram.getCounts();
+        Map<Long, Chunk<Long>> counts = histogram.getCounts();
         p( histogram );
         return histogram;
     }

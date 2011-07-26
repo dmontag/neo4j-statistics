@@ -9,10 +9,12 @@ import java.util.List;
 
 public class PropertyTypeStatsFactory implements StatisticsProcessorFactory
 {
+    private static final long DEFAULT_CHUNK_SIZE = 5;
+
     @Override
     public StatisticsProcessor getProcessor( GraphDatabaseService graphDb, List<String> args, PrintStream out )
     {
-        return new PropertyTypeStats( graphDb, out );
+        return new PropertyTypeStats( graphDb, out, getChunkSize( args ));
     }
 
     @Override
@@ -25,5 +27,14 @@ public class PropertyTypeStatsFactory implements StatisticsProcessorFactory
     public String argsHelp()
     {
         return " - Print stats about properties";
+    }
+
+    private long getChunkSize( List<String> args )
+    {
+        if ( args.size() < 1 )
+        {
+            return DEFAULT_CHUNK_SIZE;
+        }
+        return Long.valueOf( args.get( 0 ) );
     }
 }

@@ -2,134 +2,74 @@ package org.neo4j.statistics.processors;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.statistics.Chunk;
 import org.neo4j.statistics.Histogram;
-import org.neo4j.statistics.KeyedCounter;
 import org.neo4j.statistics.StatisticsProcessor;
 
 import java.io.PrintStream;
-import java.util.Comparator;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.SortedMap;
-import java.util.TreeMap;
 
 public class RelationshipsPerNodeHistogram implements StatisticsProcessor
 {
-    private KeyedCounter<String> countPerType = new KeyedCounter<String>();
-    private Map<Long, Chunk> chunks = new HashMap<Long, Chunk>();
-    private long chunkSize;
-    private volatile long nodeCount;
-    private volatile long relCount;
     private PrintStream out;
     private GraphDatabaseService graphDb;
     private volatile boolean shouldAbort;
 
-    private Histogram histogram;
+    private Histogram<Long> histogram;
 
     public RelationshipsPerNodeHistogram( GraphDatabaseService graphDb, PrintStream out, long chunkSize )
     {
         this.graphDb = graphDb;
         this.out = out;
-        this.chunkSize = chunkSize;
+        histogram = new Histogram<Long>( chunkSize );
     }
 
     public void run()
     {
         for ( Node node : graphDb.getAllNodes() )
         {
-            if (shouldAbort) return;
-            nodeCount++;
-            int count = 0;
-            for ( Relationship rel : node.getRelationships() )
-            {
-                countPerType.incForKey( rel.getType().name() );
-                relCount++;
-                count++;
-            }
-            long key = getChunkKeyForCount( count );
-            Chunk chunk = chunks.get( key );
-            if ( chunk == null ) chunks.put( key, chunk = new Chunk() );
-            chunk.record( node.getId() );
+            if ( shouldAbort ) return;
+            int count = IteratorUtil.count( node.getRelationships() );
+            histogram.record( node.getId(), count );
         }
     }
 
-    private long getChunkKeyForCount( long count )
-    {
-        return count == 0 ? 0 : ( ( count - 1 ) / chunkSize ) + 1;
-    }
-
-    private long getCountBaseForChunkKey( long key )
-    {
-        return ( ( key - 1 ) * chunkSize ) + 1;
-    }
-
-    private long getEndOfChunkForCountBase( long countBase )
-    {
-        return countBase + chunkSize - 1;
-    }
 
     @Override
     public String toString()
     {
         StringBuilder result = new StringBuilder();
 
-        result.append( "Total nodes: " ).append( getNodeCount() ).append( "\n" );
-        result.append( "Total rels: " ).append( getRelCount() ).append( "\n" );
-        result.append( "Rank\tNodes\t\tRels\t\tSamples\t\tAggregate from top" ).append( "\n" );
-        TreeMap<Long, Chunk> sortedResults = new TreeMap<Long, Chunk>( new ReverseLongComparator() );
-        sortedResults.putAll( chunks );
-
-        writeRows( result, sortedResults );
+        result.append( histogram.toString( "Nodes", "Rels" ) );
 
         return result.toString();
     }
 
-    public void writeRows( StringBuilder result, SortedMap<Long, Chunk> sortedResults )
+    public void writeRows( StringBuilder result, SortedMap<Long, Chunk<Long>> sortedResults )
     {
-        int rank = 1;
-        long aggregate = 0;
-        for ( Map.Entry<Long, Chunk> relChunkEntry : sortedResults.entrySet() )
-        {
-            aggregate += relChunkEntry.getValue().getCount();
-            writeRow( result, rank, relChunkEntry.getKey(), relChunkEntry.getValue(), aggregate );
-            rank += 1;
-        }
+        histogram.writeRows( result, sortedResults );
     }
 
-    public void writeRow( StringBuilder result, int rank, long chunkKey, Chunk chunk, long aggregate )
+    public void writeRow( StringBuilder result, int rank, long chunkKey, Chunk<Long> chunk, long aggregate )
     {
-        result.append( rank ).append( "\t" )
-            .append( chunk.getCount() ).append( "\t\t" )
-            .append( getRangeDescription( chunkKey ) ).append( "\t\t" )
-            .append( chunk.getSamples() ).append( "\t\t" )
-            .append( aggregate ).append( "\n" );
+        histogram.writeRow( result, rank, chunkKey, chunk, aggregate );
     }
 
-    private String getRangeDescription( long chunkKey )
+    public Map<Long, Chunk<Long>> getCounts()
     {
-        if ( chunkKey == 0 )
-        {
-            return "0";
-        }
-        long floor = getCountBaseForChunkKey( chunkKey );
-        return floor + "-" + getEndOfChunkForCountBase( floor );
-    }
-
-    public Map<Long, Chunk> getCounts()
-    {
-        return chunks;
+        return histogram.getChunks();
     }
 
     public long getNodeCount()
     {
-        return nodeCount;
+        return histogram.getTotalSamples();
     }
 
     public long getRelCount()
     {
-        return relCount / 2;
+        return histogram.getTotalCounts() / 2;
     }
 
     public void process()
@@ -145,14 +85,6 @@ public class RelationshipsPerNodeHistogram implements StatisticsProcessor
     public void abort()
     {
         shouldAbort = true;
-    }
-
-    public static class ReverseLongComparator implements Comparator<Long>
-    {
-        public int compare( Long o1, Long o2 )
-        {
-            return ( o2 < o1 ) ? -1 : ( ( o1 < o2 ) ? 1 : 0 );
-        }
     }
 
 //    public static void main( String[] args ) throws IOException

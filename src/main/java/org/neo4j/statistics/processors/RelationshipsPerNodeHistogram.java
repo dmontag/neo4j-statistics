@@ -8,6 +8,7 @@ import org.neo4j.statistics.Histogram;
 import org.neo4j.statistics.StatisticsProcessor;
 
 import java.io.PrintStream;
+import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
 
@@ -52,9 +53,9 @@ public class RelationshipsPerNodeHistogram implements StatisticsProcessor
         histogram.writeRows( result, sortedResults );
     }
 
-    public void writeRow( StringBuilder result, int rank, long chunkKey, Chunk<Long> chunk, long aggregate )
+    public void writeRow( StringBuilder result, int rank, long count, long chunkKey, List<Long> samples, long aggregate, long weight, long aggregateWeight )
     {
-        histogram.writeRow( result, rank, chunkKey, chunk, aggregate );
+        histogram.writeRow( result, rank, count, chunkKey, samples, aggregate, weight, aggregateWeight );
     }
 
     public Map<Long, Chunk<Long>> getCounts()

@@ -2,17 +2,11 @@ package org.neo4j.statistics;
 
 import jline.ConsoleReader;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.kernel.EmbeddedReadOnlyGraphDatabase;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.ServiceLoader;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -116,10 +110,10 @@ public class Main
     private GraphDatabaseService createGraphDb()
     {
         File configFile = new File( storePath, "neo4j.properties" );
-        Map<String, String> config = configFile.exists()
-            ? EmbeddedGraphDatabase.loadConfigurations( configFile.getAbsolutePath() )
-            : new HashMap<String, String>();
-        return new EmbeddedReadOnlyGraphDatabase( storePath.getAbsolutePath(), config );
+        GraphDatabaseFactory f = new GraphDatabaseFactory();
+        return configFile.exists()
+            ? f.newEmbeddedDatabaseBuilder(storePath.getAbsolutePath()).loadPropertiesFromFile( configFile.getAbsolutePath() ).newGraphDatabase()
+            : f.newEmbeddedDatabase(storePath.getAbsolutePath());
     }
 
     private List<String> extractArgs( String[] cmdParts )

@@ -27,7 +27,7 @@ public class RelationshipTypeCounts implements StatisticsProcessor
 
     public void run()
     {
-        long maxRels = ( (AbstractGraphDatabase) graphDb ).getConfig().getGraphDbModule().getNodeManager().getNumberOfIdsInUse( Relationship.class ) + 1;
+        long maxRels = ( (AbstractGraphDatabase) graphDb ).getNodeManager().getNumberOfIdsInUse( Relationship.class ) + 1;
         out.println( "Max rels: " + maxRels );
         for ( int i = 0; i < maxRels; i++ )
         {

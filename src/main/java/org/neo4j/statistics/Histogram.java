@@ -4,6 +4,7 @@ import java.lang.reflect.Array;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -70,40 +71,45 @@ public class Histogram<SAMPLE_TYPE>
     public void writeRows( StringBuilder result, SortedMap<Long, Chunk<SAMPLE_TYPE>> sortedResults )
     {
         int rank = 1;
-        long aggregate = 0;
+        long aggregateCount = 0;
+        long aggregateWeight = 0;
         for ( Map.Entry<Long, Chunk<SAMPLE_TYPE>> relChunkEntry : sortedResults.entrySet() )
         {
-            aggregate += relChunkEntry.getValue().getCount();
-            writeRow( result, rank, relChunkEntry.getKey(), relChunkEntry.getValue(), aggregate );
+            long chunkKey = relChunkEntry.getKey();
+            Chunk<SAMPLE_TYPE> chunk = relChunkEntry.getValue();
+            long count = chunk.getCount();
+            aggregateCount += count;
+            long topOfChunk = chunkKey == 0 ? 0 : getEndOfChunkForCountBase( getCountBaseForChunkKey( chunkKey ) );
+            long weight = count * topOfChunk;
+            aggregateWeight += weight;
+            writeRow( result, rank, count, chunkKey, chunk.getSamples(), aggregateCount, weight, aggregateWeight );
             rank += 1;
         }
     }
 
     @SuppressWarnings( { "unchecked" } )
-    public void writeRow( StringBuilder result, int rank, long chunkKey, Chunk<SAMPLE_TYPE> chunk, long aggregate )
+    public void writeRow( StringBuilder result, int rank, long count, long chunkKey, List<SAMPLE_TYPE> samples, long aggregate, long weight, long aggregateWeight )
     {
-        long count = chunk.getCount();
         result.append( rank ).append( "\t" )
             .append( count ).append( "\t\t" )
             .append( getRangeDescription( chunkKey ) ).append( "\t\t" );
         if (includeSamples)
         {
-            appendSamples( result, chunk );
+            appendSamples( result, samples );
         }
         else
         {
             result.append( "[snip]\t\t" );
         }
-        long topOfChunk = chunkKey == 0 ? 0 : getEndOfChunkForCountBase( getCountBaseForChunkKey( chunkKey ) );
-        long weight = count * topOfChunk;
         result.append( aggregate ).append( "\t\t" )
-            .append( weight ).append( "\n" );
+            .append( weight ).append( "\t\t" )
+            .append( aggregateWeight ).append( "\n" );
     }
 
-    private void appendSamples( StringBuilder result, Chunk<SAMPLE_TYPE> chunk )
+    private void appendSamples( StringBuilder result, List<SAMPLE_TYPE> samples )
     {
         result.append( "[" );
-        Iterator<SAMPLE_TYPE> sampleIterator = chunk.getSamples().iterator();
+        Iterator<SAMPLE_TYPE> sampleIterator = samples.iterator();
         while ( sampleIterator.hasNext() )
         {
             SAMPLE_TYPE next = sampleIterator.next();
@@ -144,7 +150,7 @@ public class Histogram<SAMPLE_TYPE>
         sb.append( "Total " ).append( sampleType.toLowerCase() ).append( ": " ).append( totalSamples ).append( "\n" );
         sb.append( "Total " ).append( countType.toLowerCase() ).append( ": " ).append( totalCounts ).append( "\n" );
         sb.append( "Rank\t" ).append( sampleType ).append( "\t\t" ).append( countType )
-            .append( "\t\tSamples\t\tAggregate from top\t\tWeight" ).append( "\n" );
+            .append( "\t\tSamples\t\tAggregate from top\t\tWeight\t\tAggregate weight" ).append( "\n" );
         writeRows( sb, getSortedChunks() );
         return sb.toString();
     }

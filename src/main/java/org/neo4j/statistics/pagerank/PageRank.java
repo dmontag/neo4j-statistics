@@ -71,7 +71,7 @@ public class PageRank {
 
         try {
             int id = Integer.parseInt(cmd);
-            println("%d: %f", id, pr.get(id));
+            println("%d: %s", id, Double.valueOf(pr.get(id)).toString());
         } catch (NumberFormatException e) {
             println("Invalid id: %s", cmd);
             return true;

@@ -5,17 +5,14 @@ import org.junit.Test;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.statistics.processors.RelationshipsPerNodeHistogram;
+import org.neo4j.tooling.GlobalGraphOperations;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.SortedMap;
-import java.util.TreeMap;
+import java.util.*;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class RelationshipsPerNodeHistogramTest extends Neo4jTestCase
 {
@@ -25,7 +22,7 @@ public class RelationshipsPerNodeHistogramTest extends Neo4jTestCase
     @Before
     public void cleanDb()
     {
-        for ( Node node : graphDb().getAllNodes() )
+        for ( Node node : GlobalGraphOperations.at(graphDb()).getAllNodes() )
         {
             if ( node.getId() == 0 )
             {
@@ -38,6 +35,7 @@ public class RelationshipsPerNodeHistogramTest extends Neo4jTestCase
             node.delete();
         }
         restartTx();
+        assertEquals("Clean failed.", 1, Iterables.count(GlobalGraphOperations.at(graphDb()).getAllNodes()));
         expected = new HashMap<Long, Chunk>();
     }
 
@@ -127,12 +125,11 @@ public class RelationshipsPerNodeHistogramTest extends Neo4jTestCase
         Node node3 = graphDb().createNode();
         node1.createRelationshipTo( node2, REL_TYPE );
         node1.createRelationshipTo( node3, REL_TYPE );
-        node1.createRelationshipTo( graphDb().createNode(), REL_TYPE );
-        node1.createRelationshipTo( graphDb().createNode(), REL_TYPE );
         Map<Long, Chunk<Long>> result = getNodeHisto( 10 ).getCounts();
-        assertEquals( "Wrong samples.",
-            Arrays.asList( node1.getId(), node2.getId(), node3.getId() ),
-            result.get( 1L ).getSamples() );
+        List<Long> samples = result.get(1L).getSamples();
+        System.out.println(samples);
+        assertTrue("Wrong samples.",
+                samples.containsAll(Arrays.asList(node1.getId(), node2.getId(), node3.getId())));
     }
 
     @Test
